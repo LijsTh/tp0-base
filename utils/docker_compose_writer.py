@@ -9,16 +9,16 @@ def clients_data(clients_n):
     for i in range(1, clients_n+1):
         client_total += f"""
   client{i}:
-      container_name: client{i}
-      image: client:latest
-      entrypoint: /client
-      environment:
-          - CLI_ID={i}
-          - CLI_LOG_LEVEL=DEBUG
-      networks:
-          - testing_net
-      depends_on:
-          - server 
+     container_name: client{i}
+     image: client:latest
+     entrypoint: /client
+     environment:
+         - CLI_ID={i}
+         - CLI_LOG_LEVEL=DEBUG
+     networks:
+         - testing_net
+     depends_on:
+         - server 
     """
     return client_total
 
@@ -26,15 +26,16 @@ def clients_data(clients_n):
 
 
 def server_data():
-    return f"""  server:
-      container_name: server
-      image: server:latest
-      entrypoint: python3 /main.py
-      environment:
-        - PYTHONUNBUFFERED=1
-        - LOGGING_LEVEL=DEBUG
-      networks:
-        - testing_net 
+    return f"""
+  server:
+    container_name: server
+    image: server:latest
+    entrypoint: python3 /main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOGGING_LEVEL=DEBUG
+    networks:
+      - testing_net
     """
 
 
@@ -45,22 +46,12 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 172.25.125.0/24
-    """
-    return {
-        "testing_net": {
-            "ipam" : {
-                "driver": "default",
-                "config" : [{
-                    "subnet": "172.25.125.0/24"
-                }]
-            }
-        }
-    }
+        - subnet: 172.25.125.0/24\n"""
+
 
 
 def write_docker_compose_file(file_name,  n_clients):
-    yaml_str = f"""name: tp0 \nservices:\n"""
+    yaml_str = f"""name: tp0\nservices:"""
     yaml_str += server_data()
     yaml_str += clients_data(n_clients)
     yaml_str += network_data()
