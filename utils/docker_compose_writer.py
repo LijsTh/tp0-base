@@ -1,8 +1,13 @@
+import sys
 from yaml_parsing import parse_to_yaml, save_yaml_to_file
+
+N_CLIENTS = 2
+FILE_NAME = 1
+N_ARGS = 3
 
 def clients_data(clients_n):
     clients = {}
-    for i in range(clients_n):
+    for i in range(1 , clients_n+1):
         clients[f"client{i}"] = {
             "container_name": f"client{i}",
             "image": "client:latest",
@@ -42,28 +47,32 @@ def network_data():
     }
 
 
-def write_docker_compose_file(data):
+def write_docker_compose_file(file_name,  n_clients):
     yaml_data = {
         "name" : "tp0",
         "services": {
             "server": server_data(),
-            **clients_data(data["clients_n"]),
+            **clients_data(n_clients),
         },
         "networks": network_data()
     }
 
     yaml_str = parse_to_yaml(yaml_data)
-    save_yaml_to_file(yaml_str,"docker-compose-test.yml")
+    save_yaml_to_file(yaml_str,file_name)
 
-
-
-            
-
-
-    
 
 if __name__ == "__main__":
-    data = {
-        "clients_n": 3
-    }
-    write_docker_compose_file(data)
+    try:
+        if len(sys.argv) != N_ARGS:
+            raise ValueError("Uso: python3 docker_compose_writer.py <nombre_del_archivo_docker_compose> <n_clientes>")
+        elif not sys.argv[N_CLIENTS].isdigit() or int(sys.argv[N_CLIENTS]) <= 0:
+            raise ValueError("n_clientes debe ser un número entero positivo")
+        elif not sys.argv[FILE_NAME].endswith(".yaml"):
+            raise ValueError("El nombre del archivo debe terminar con .yaml")
+            
+        write_docker_compose_file(sys.argv[FILE_NAME], int(sys.argv[N_CLIENTS]))
+        print(f"Archivo {sys.argv[FILE_NAME]} generado correctamente!")
+
+    except Exception as e:
+        print(f'Error al general el docker-compose : {e}')
+        sys.exit(1)
