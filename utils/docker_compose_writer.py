@@ -13,13 +13,14 @@ def clients_data(clients_n):
      image: client:latest
      entrypoint: /client
      environment:
-         - CLI_ID={i}
-         - CLI_LOG_LEVEL=DEBUG
+       - CLI_ID={i}
+       - CLI_LOG_LEVEL=DEBUG
      networks:
-         - testing_net
+       - testing_net
      depends_on:
-         - server 
-    """
+       - server 
+     volumes:
+       - ./client/config.yaml:/config.yaml\n"""
     return client_total
 
 
@@ -36,7 +37,8 @@ def server_data():
       - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
-    """
+    volumes:
+      - ./server/config.ini:/config.ini\n"""
 
 
 def network_data():
