@@ -1,40 +1,52 @@
 import sys
-from yaml_parsing import parse_to_yaml, save_yaml_to_file
 
 N_CLIENTS = 2
 FILE_NAME = 1
 N_ARGS = 3
 
 def clients_data(clients_n):
-    clients = {}
-    for i in range(1 , clients_n+1):
-        clients[f"client{i}"] = {
-            "container_name": f"client{i}",
-            "image": "client:latest",
-            "entrypoint": "/client",
-            "environment": [
-                f'CLI_ID={i}',
-                "CLI_LOG_LEVEL=DEBUG"
-            ],
-            "networks": ["testing_net"],
-            "depends_on": ["server"]
-        }
-    return clients
+    client_total = ""
+    for i in range(1, clients_n+1):
+        client_total += f"""
+  client{i}:
+      container_name: client{i}
+      image: client:latest
+      entrypoint: /client
+      environment:
+          - CLI_ID={i}
+          - CLI_LOG_LEVEL=DEBUG
+      networks:
+          - testing_net
+      depends_on:
+          - server 
+    """
+    return client_total
+
+
 
 
 def server_data():
-    return {
-        "container_name": "server",
-        "image": "server:latest",
-        "entrypoint": "python3 /main.py",
-        "environment": [
-            "PYTHONUNBUFFERED=1",
-            "LOGGING_LEVEL=DEBUG"
-        ],
-        "networks": ["testing_net"]
-    }
+    return f"""  server:
+      container_name: server
+      image: server:latest
+      entrypoint: python3 /main.py
+      environment:
+        - PYTHONUNBUFFERED=1
+        - LOGGING_LEVEL=DEBUG
+      networks:
+        - testing_net 
+    """
+
 
 def network_data():
+    return f"""
+networks:
+  testing_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.25.125.0/24
+    """
     return {
         "testing_net": {
             "ipam" : {
@@ -48,17 +60,15 @@ def network_data():
 
 
 def write_docker_compose_file(file_name,  n_clients):
-    yaml_data = {
-        "name" : "tp0",
-        "services": {
-            "server": server_data(),
-            **clients_data(n_clients),
-        },
-        "networks": network_data()
-    }
+    yaml_str = f"""name: tp0 \nservices:\n"""
+    yaml_str += server_data()
+    yaml_str += clients_data(n_clients)
+    yaml_str += network_data()
 
-    yaml_str = parse_to_yaml(yaml_data)
-    save_yaml_to_file(yaml_str,file_name)
+    with open(file_name, "w") as f:
+        f.write(yaml_str)
+
+
 
 
 if __name__ == "__main__":
