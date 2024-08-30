@@ -2,8 +2,10 @@ package common
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/op/go-logging"
@@ -29,7 +31,7 @@ type Client struct {
 // as a parameter
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
-		config: config,
+		config: config, 
 	}
 	return client
 }
@@ -51,10 +53,13 @@ func (c *Client) createClientSocket() error {
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop() {
+func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
+	// Messages if the message amount threshold has not been surpassed\
+out: 
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
@@ -65,25 +70,33 @@ func (c *Client) StartClientLoop() {
 			c.config.ID,
 			msgID,
 		)
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
+			select {
+			case <-ctx.Done():
+				// Closes the connection if the signal arrives before writing the message
+				c.conn.Close()
+				log.Infof("action: close_connection | result: success | client_id: %v", c.config.ID)
+				break out
 
-		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			return
+			default: 
+				msg, err := bufio.NewReader(c.conn).ReadString('\n')
+				c.conn.Close()
+				if err != nil {
+					log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+						c.config.ID,
+						err,
+					)
+					break out
+				}
+	
+				log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
+					c.config.ID,
+					msg,
+				)
+	
+				// Wait a time between sending one message and the next one
+				time.Sleep(c.config.LoopPeriod)
+			}
 		}
-
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
-		)
-
-		// Wait a time between sending one message and the next one
-		time.Sleep(c.config.LoopPeriod)
-
-	}
+	
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
