@@ -22,7 +22,6 @@ class Server:
         """
 
         signal.signal(signal.SIGTERM, self.__shutdown)
-        signal.signal(signal.SIGINT, self.__shutdown)
 
 
         # TODO: Modify this program to handle signal to graceful shutdown
@@ -38,8 +37,6 @@ class Server:
                     logging.error(f"action: accept_connections | result: fail | error: {e}")
                 break
 
-        self._server_socket.shutdown(socket.SHUT_RDWR)
-        self._server_socket.close()
         logging.info("action: server_shutdown | result: success")
 
 
@@ -61,7 +58,10 @@ class Server:
             # TODO: Modify the send to avoid short-writes
             self.client.send("{}\n".format(msg).encode('utf-8'))
         except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
+            if self.running:
+                logging.error(f"action: receive_message | result: fail | error: {e}")
+            else:
+                logging.info("action: client_shutdown | result: success") 
         finally:
             if self.client:
                 self.client.close()
@@ -88,10 +88,13 @@ class Server:
 
     
     def __shutdown(self, signum, frame):
-        print(f' signal {signum} received')
-        if signum == signal.SIGTERM and self.client:
+        if self.client:
             self.client.close()
+            self.client = None
         self.running = False
+        self._server_socket.shutdown(socket.SHUT_RDWR)
+        self._server_socket.close()
+       
 
        
 
