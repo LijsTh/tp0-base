@@ -66,7 +66,9 @@ out:
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
 
 		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket(ctx)
+		err := c.createClientSocket(ctx)
+		if err != nil {break out}	
+		
 
 		// TODO: Modify the send to avoid short-write
 		fmt.Fprintf(
