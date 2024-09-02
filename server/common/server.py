@@ -22,6 +22,7 @@ class Server:
         """
 
         signal.signal(signal.SIGTERM, self.__shutdown)
+        signal.signal(signal.SIGINT, self.__shutdown)
 
 
         # TODO: Modify this program to handle signal to graceful shutdown
