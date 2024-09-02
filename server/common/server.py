@@ -1,7 +1,8 @@
 import socket
 import logging
 import signal
-
+from common.utils import Bet, store_bets
+from common.protocol import recv_bet, send_all
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -53,11 +54,10 @@ class Server:
         """
         try:
             # TODO: Modify the receive to avoid short-reads
-            msg = self.client.recv(1024).rstrip().decode('utf-8')
+            bet = recv_bet(self.client)
+            store_bets([bet])
             addr = self.client.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            self.client.send("{}\n".format(msg).encode('utf-8'))
+            logging.info(f"action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}.")
         except OSError as e:
             if self.running:
                 logging.error(f"action: receive_message | result: fail | error: {e}")
