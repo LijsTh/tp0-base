@@ -9,6 +9,8 @@ import (
 )
 
 const MAX_STR_SIZE = 255
+const DOCUMENT_SIZE = 4
+const NUMBER_SIZE = 2
 
 func RecvAll(conn net.Conn, size int) []byte {
 	reader := bufio.NewReader(conn)
@@ -72,7 +74,7 @@ func SendBet(conn net.Conn, bet *Bet) error {
 	msg = serializeUnknownString(bet.lastName, msg)
 
 	// document
-	docBytes := make([]byte, 4)
+	docBytes := make([]byte, DOCUMENT_SIZE)
 	binary.BigEndian.PutUint32(docBytes, bet.document)
 	msg = append(msg, docBytes...)
 
@@ -80,7 +82,7 @@ func SendBet(conn net.Conn, bet *Bet) error {
 	msg = append(msg, []byte(bet.birthDate)...) // SIZE 10
 
 	// number
-	numBytes := make([]byte, 2)
+	numBytes := make([]byte, NUMBER_SIZE)
 	binary.BigEndian.PutUint16(numBytes, bet.number)
 	msg = append(msg, numBytes...)
 
