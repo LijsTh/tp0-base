@@ -117,9 +117,12 @@ func main() {
 	}
     ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	// Create a new client and start the client loop
 	client := common.NewClient(clientConfig)
 	wg.Add(1)
 	go client.StartClientLoop(ctx, &wg)
 
+	// Wait for the client loop to finish
 	wg.Wait()
 }
