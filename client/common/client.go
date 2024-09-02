@@ -2,9 +2,7 @@ package common
 
 import (
 	"os"
-	"bufio"
 	"context"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -69,28 +67,26 @@ loop:
 			os.Exit(1)
 		}
 
-		// Sends a message to the server and waits for a response
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v\n",
-			c.config.ID,
-			msgID,
+		bet := NewBet (
+			"1",
+			"John",
+			"Doe",
+			1000000,
+			"2000-01-01",
+			8590,
 		)
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
-
+		err = SendBet(c.conn, bet)	
 		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
+			log.Criticalf(
+				"action: send_bet | result: fail | client_id: %v | error: %v",
 				c.config.ID,
 				err,
 			)
-			return 
-		} else {
-			log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-				c.config.ID,
-				msg,
-			)
+			c.conn.Close()
+			return
 		}
+		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v", bet.document, bet.number)
+		c.conn.Close()
 
 		// Checks if the context has been cancelled
 		select {
