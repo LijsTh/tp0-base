@@ -17,7 +17,7 @@ const MAX_BATCH_BYTES = 8000 // 8KB
 const SUCESS = 0
 const FAIL = 1
 
-func RecvAll(conn net.Conn, size int) []byte {
+func RecvAll(conn net.Conn, size int) ([]byte, error) {
 	reader := bufio.NewReader(conn)
 	msg := make([]byte, size)
 	read := int(0)
@@ -29,12 +29,12 @@ func RecvAll(conn net.Conn, size int) []byte {
 				read,
 				err,
 			)
-			os.Exit(1)
+			return nil, err
 		}
 		read += n
 	} 
 	
-	return msg
+	return msg, nil
 
 }
 
@@ -118,8 +118,8 @@ func SendBatch(conn net.Conn, bets []*Bet) error {
 	if err != nil {return err} else {return nil}
 }
 
-func RecvAnswer(conn net.Conn){
-	answer := RecvAll(conn, ANSWER_SIZE)
+func RecvAnswer(conn net.Conn) error{
+	answer, err := RecvAll(conn, ANSWER_SIZE)
 	if answer[0] != SUCESS {
 		log.Criticalf(
 			"action: send_batch | result: fail | error: server returned an error",
@@ -129,4 +129,5 @@ func RecvAnswer(conn net.Conn){
 			"action: send_batch | result: success",
 		)
 	}
+	return err
 }

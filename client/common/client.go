@@ -63,8 +63,6 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup) {
 		os.Exit(1)
 	}
 	defer reader.file.Close()
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed\
 loop: 
 	for msgID := 1; !reader.finished; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
@@ -77,12 +75,24 @@ loop:
 		bets, err := reader.ReadBets()
 		if err != nil {
 			log.Criticalf("action: read_bets | result: fail | error: %v", err)
-			os.Exit(1)
+			c.conn.Close()
+			return
 		}
 
 
-		SendBatch(c.conn, bets)
-		RecvAnswer(c.conn)
+		err = SendBatch(c.conn, bets)
+		if err != nil {
+			log.Criticalf("action: send_batch | result: fail | error: %v", err)
+			c.conn.Close()
+			return
+		}
+
+		err = RecvAnswer(c.conn)
+		if err != nil {
+			log.Criticalf("action: recv_answer | result: fail | error: %v", err)
+			c.conn.Close()
+			return
+		}
 
 		// Checks if the context has been cancelled
 		select {

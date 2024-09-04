@@ -59,7 +59,7 @@ class Server:
             send_sucess(self.client)
         except OSError as e:  # Connection closed
             if self.running:
-                logging.info("action: client_shutdown | result: success") 
+                logging.info("action: client_shutdown | result: success")
         except any as e :
                 logging.info(f"apuesta_recibida | result: fail | cantidad: {len(bets)}| error: {e}")
                 empty_socket(self.client) # Flushes the current batch
