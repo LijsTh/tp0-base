@@ -1,9 +1,9 @@
 package common
 
 import (
-	"os"
 	"context"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -66,15 +66,9 @@ loop:
 			// If the connection fails, the client is closed and exit 1 is returned
 			os.Exit(1)
 		}
+		// Uses env to create a new bet
+		bet := NewBetFromEnv()
 
-		bet := NewBet (
-			"1",
-			"John",
-			"Doe",
-			1000000,
-			"2000-01-01",
-			8590,
-		)
 		err = SendBet(c.conn, bet)	
 		if err != nil {
 			log.Criticalf(
@@ -86,6 +80,9 @@ loop:
 			return
 		}
 		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v", bet.document, bet.number)
+
+		// Receives the response from the server
+		RecvAnswer(c.conn)
 		c.conn.Close()
 
 		// Checks if the context has been cancelled

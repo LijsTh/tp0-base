@@ -11,6 +11,10 @@ import (
 const MAX_STR_SIZE = 255
 const DOCUMENT_SIZE = 4
 const NUMBER_SIZE = 2
+const ANSWER_SIZE = 1
+
+const SUCESS = 0
+const FAIL = 1
 
 func RecvAll(conn net.Conn, size int) []byte {
 	reader := bufio.NewReader(conn)
@@ -88,4 +92,13 @@ func SendBet(conn net.Conn, bet *Bet) error {
 
 	err := send_all(conn, msg)
 	if err != nil {return err} else {return nil}
+}
+
+func RecvAnswer(conn net.Conn) {
+	answer := RecvAll(conn, ANSWER_SIZE)
+	if answer[0] != SUCESS {
+		log.Error("action: receive_message | result: fail")
+	} else {
+		log.Info("action: receive_message | result: success") 
+	}
 }

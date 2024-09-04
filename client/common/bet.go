@@ -2,6 +2,7 @@ package common
 
 import (
 	"strconv"
+	"os"
 )
 
 type Bet struct {
@@ -27,3 +28,18 @@ func NewBet(agency string, firstName string, lastName string, document uint32, b
 }
 
 
+func NewBetFromEnv() *Bet {
+	agency := os.Getenv("AGENCY")
+	firstName := os.Getenv("FIRSTNAME")
+	lastName := os.Getenv("LASTNAME")
+	document, err := strconv.Atoi(os.Getenv("DOCUMENT"))
+	if err != nil {
+		panic(err)
+	}
+	birthDate := os.Getenv("BIRTHDATE")
+	number, err:= strconv.Atoi(os.Getenv("NUMBER"))
+	if err != nil {
+		panic(err)
+	}
+	return NewBet(agency, firstName, lastName, uint32(document), birthDate, uint16(number))
+}
