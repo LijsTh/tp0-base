@@ -1,12 +1,19 @@
 import socket
 from common.utils import Bet
 
+## Size constants
 AGENCY_SIZE = 1 
 STR_SIZE = 1 
 DOCUMENT_SIZE = 4 
 BIRTHDATE_SIZE = 10 
 NUMBER_SIZE = 2 
 MAX_STR_SIZE = 255
+BATCH_SIZE = 2
+ANSWER_SIZE = 1
+
+## Server answers
+SUCESS = 0
+ERROR_GENERIC = 1
 
 """
 Reads a bet from the socket and returns it.
@@ -69,3 +76,33 @@ def send_all(skt: socket.socket, data: bytes) -> None:
     while len(data) > 0:
         sent = skt.send(data)
         data = data[sent:]
+
+
+def recv_batch(skt: socket.socket) -> list[Bet]:
+    data = recv_all(skt, BATCH_SIZE)
+    size = int.from_bytes(data, byteorder='big')
+    bets = []
+    for _ in range(size):
+        bets.append(recv_bet(skt))
+    return bets
+
+def send_error(skt: socket.socket) -> None:
+    send_answer(skt, ERROR_GENERIC)
+
+def send_sucess(skt: socket.socket) -> None:
+    send_answer(skt, SUCESS)
+
+def send_answer(skt: socket.socket, answer: int) -> None:
+    if answer not in [SUCESS, ERROR_GENERIC]:
+        raise ValueError("Invalid answer")
+    data = answer.to_bytes(ANSWER_SIZE, byteorder='big')
+    send_all(skt, data)
+
+
+def empty_socket(skt: socket.socket) -> None:
+    while True:
+        try:
+            skt.recv(1)
+        except:
+            ## Socket is empty
+            break

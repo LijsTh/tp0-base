@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 from common.utils import Bet, store_bets
-from common.protocol import recv_bet, send_all
+from common.protocol import send_all, recv_batch, send_error, send_sucess, empty_socket
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -53,16 +53,18 @@ class Server:
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
-            bet = recv_bet(self.client)
-            store_bets([bet])
-            addr = self.client.getpeername()
-            logging.info(f"action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}.")
-        except OSError as e:
+            bets = recv_batch(self.client)
+            store_bets(bets)
+            logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(bets)}")
+            send_sucess(self.client)
+        except OSError as e:  # Connection closed
             if self.running:
-                logging.error(f"action: receive_message | result: fail | error: {e}")
-            else:
                 logging.info("action: client_shutdown | result: success") 
+        except any as e :
+                logging.info(f"apuesta_recibida | result: fail | cantidad: {len(bets)}| error: {e}")
+                empty_socket(self.client) # Flushes the current batch
+                send_error(self.client) 
+                
         finally:
             if self.client:
                 self.client.close()
@@ -95,7 +97,5 @@ class Server:
         self.running = False
         self._server_socket.shutdown(socket.SHUT_RDWR)
         self._server_socket.close()
-       
-
        
 
