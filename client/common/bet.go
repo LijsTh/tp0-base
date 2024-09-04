@@ -30,13 +30,14 @@ func NewBet(agency string, firstName string, lastName string, document uint32, b
 
 
 type BetReader struct {
+	agency string
 	finished bool
 	reader *csv.Reader
 	file *os.File
 	batch_size int
 }
 
-func NewBetReader(csv_path string, batch_size int) (*BetReader, error) {
+func NewBetReader(csv_path string, batch_size int, agency string) (*BetReader, error) {
 	file, err := os.Open(csv_path)
 	if err != nil {
 		return nil, err
@@ -47,6 +48,7 @@ func NewBetReader(csv_path string, batch_size int) (*BetReader, error) {
 	bet_reader.finished = false
 	bet_reader.batch_size = batch_size
 	bet_reader.file = file
+	bet_reader.agency = agency
 	
 	return bet_reader, nil
 }
@@ -72,7 +74,7 @@ func (br *BetReader) ReadBet() (*Bet, error) {
 	number,err := strconv.Atoi(record[4])
 	if err != nil { return nil, err}
 
-	return NewBet("1", firstName, lastName, uint32(document), birthDate, uint16(number)), nil
+	return NewBet(br.agency, firstName, lastName, uint32(document), birthDate, uint16(number)), nil
 }
 
 func (br *BetReader) Finished() bool {

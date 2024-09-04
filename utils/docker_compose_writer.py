@@ -17,7 +17,8 @@ def clients_data(clients_n):
      depends_on:
        - server 
      volumes:
-       - ./client/config.yaml:/config.yaml\n"""
+       - ./client/config.yaml:/config.yaml
+       - ./.data/:/data\n"""
     return client_total
 
 

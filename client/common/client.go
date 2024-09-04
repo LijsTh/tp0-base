@@ -56,8 +56,8 @@ func (c *Client) createClientSocket() error {
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	file := "../.data/agency-" + "1" + ".csv"
-	reader, err := NewBetReader(file, c.config.MaxBatch)
+	file := "/data/agency-" + c.config.ID + ".csv"
+	reader, err := NewBetReader(file, c.config.MaxBatch, c.config.ID)
 	if err != nil {
 		log.Criticalf("action: file_open | result: fail | error: %v", err)
 		os.Exit(1)
@@ -83,30 +83,6 @@ loop:
 
 		SendBatch(c.conn, bets)
 		RecvAnswer(c.conn)
-
-
-		// batch:
-		// 	for {
-		// 		bet, err := reader.ReadBet()
-		// 		if err != nil {
-		// 			if err.Error() == "EOF" {
-		// 				if len(bets) > 0 {
-		// 					SendBatch(c.conn, bets)
-		// 					RecvAnswer(c.conn)
-		// 					break batch 
-		// 				}
-		// 			} else {
-		// 				log.Criticalf("action: read_bet | result: fail | error: %v", err)
-		// 				os.Exit(1)
-		// 			} 
-		// 		}
-		// 		bets = append(bets, bet)
-		// 		if len(bets) == c.config.MaxBatch {
-		// 			SendBatch(c.conn, bets)
-		// 			RecvAnswer(c.conn)
-		// 			break batch 
-		// 		}
-		// 	}
 
 		// Checks if the context has been cancelled
 		select {
