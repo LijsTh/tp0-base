@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 from common.utils import Bet, store_bets
-from common.protocol import recv_bet, send_all
+from common.protocol import recv_bet, send_all, send_answer, SUCESS
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -53,11 +53,10 @@ class Server:
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
             bet = recv_bet(self.client)
             store_bets([bet])
-            addr = self.client.getpeername()
             logging.info(f"action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}.")
+            send_answer(self.client, SUCESS)
         except OSError as e:
             if self.running:
                 logging.error(f"action: receive_message | result: fail | error: {e}")

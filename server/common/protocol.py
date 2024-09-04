@@ -7,6 +7,11 @@ DOCUMENT_SIZE = 4
 BIRTHDATE_SIZE = 10 
 NUMBER_SIZE = 2 
 MAX_STR_SIZE = 255
+ANSWER_SIZE = 1
+
+## Server answers
+SUCESS = 0
+ERROR_GENERIC = 1
 
 """
 Reads a bet from the socket and returns it.
@@ -68,4 +73,13 @@ sends the entire message to the socket to avoid short-writes
 def send_all(skt: socket.socket, data: bytes) -> None: 
     while len(data) > 0:
         sent = skt.send(data)
+        if sent == 0:
+            raise OSError("Connection closed")
         data = data[sent:]
+
+
+def send_answer(skt: socket.socket, answer: int) -> None:
+    if answer not in [SUCESS, ERROR_GENERIC]:
+        raise ValueError("Invalid answer")
+    data = answer.to_bytes(ANSWER_SIZE, byteorder='big')
+    send_all(skt, data)
