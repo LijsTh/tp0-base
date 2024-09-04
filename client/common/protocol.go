@@ -11,6 +11,11 @@ import (
 const MAX_STR_SIZE = 255
 const DOCUMENT_SIZE = 4
 const NUMBER_SIZE = 2
+const ANSWER_SIZE = 1
+const MAX_BATCH_BYTES = 8000 // 8KB
+
+const SUCESS = 0
+const FAIL = 1
 
 func RecvAll(conn net.Conn, size int) []byte {
 	reader := bufio.NewReader(conn)
@@ -63,6 +68,13 @@ func serializeUnknownString(message string, buf []byte) []byte{
 
 
 func SendBet(conn net.Conn, bet *Bet) error {
+	msg, err := encodeBet(bet)
+	if err != nil {return err}
+	err = send_all(conn, msg)
+	if err != nil {return err} else {return nil}
+}
+
+func encodeBet (bet *Bet) ([]byte, error) {
 	// agency
 	msg := make([]byte, 0)
 	msg = append(msg, bet.agency)
@@ -86,6 +98,35 @@ func SendBet(conn net.Conn, bet *Bet) error {
 	binary.BigEndian.PutUint16(numBytes, bet.number)
 	msg = append(msg, numBytes...)
 
+	return msg, nil 
+}
+
+func SendBatch(conn net.Conn, bets []*Bet) error {
+	msg := make([]byte, 2) // 2 bytes
+	// sends the number of bets
+	binary.BigEndian.PutUint16(msg, uint16(len(bets)))
+	for _, bet := range bets {
+		if len(msg) > MAX_BATCH_BYTES {
+			log.Critical("action: send_batch | result: fail | error: batch too big")
+			os.Exit(1)
+		}
+		betMsg, err := encodeBet(bet)
+		if err != nil {return err}
+		msg = append(msg, betMsg...)
+	}
 	err := send_all(conn, msg)
 	if err != nil {return err} else {return nil}
+}
+
+func RecvAnswer(conn net.Conn){
+	answer := RecvAll(conn, ANSWER_SIZE)
+	if answer[0] != SUCESS {
+		log.Criticalf(
+			"action: send_batch | result: fail | error: server returned an error",
+		)
+	} else {
+		log.Infof(
+			"action: send_batch | result: success",
+		)
+	}
 }

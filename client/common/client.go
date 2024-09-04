@@ -18,6 +18,7 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
+	MaxBatch      int
 }
 
 // Client Entity that encapsulates how
@@ -55,11 +56,17 @@ func (c *Client) createClientSocket() error {
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
+	file := "../.data/agency-" + "1" + ".csv"
+	reader, err := NewBetReader(file, c.config.MaxBatch)
+	if err != nil {
+		log.Criticalf("action: file_open | result: fail | error: %v", err)
+		os.Exit(1)
+	}
+	defer reader.file.Close()
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed\
 loop: 
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
-
+	for msgID := 1; !reader.finished; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
 		err := c.createClientSocket()
 		if err != nil {
@@ -67,26 +74,39 @@ loop:
 			os.Exit(1)
 		}
 
-		bet := NewBet (
-			"1",
-			"John",
-			"Doe",
-			1000000,
-			"2000-01-01",
-			8590,
-		)
-		err = SendBet(c.conn, bet)	
+		bets, err := reader.ReadBets()
 		if err != nil {
-			log.Criticalf(
-				"action: send_bet | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			c.conn.Close()
-			return
+			log.Criticalf("action: read_bets | result: fail | error: %v", err)
+			os.Exit(1)
 		}
-		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v", bet.document, bet.number)
-		c.conn.Close()
+
+
+		SendBatch(c.conn, bets)
+		RecvAnswer(c.conn)
+
+
+		// batch:
+		// 	for {
+		// 		bet, err := reader.ReadBet()
+		// 		if err != nil {
+		// 			if err.Error() == "EOF" {
+		// 				if len(bets) > 0 {
+		// 					SendBatch(c.conn, bets)
+		// 					RecvAnswer(c.conn)
+		// 					break batch 
+		// 				}
+		// 			} else {
+		// 				log.Criticalf("action: read_bet | result: fail | error: %v", err)
+		// 				os.Exit(1)
+		// 			} 
+		// 		}
+		// 		bets = append(bets, bet)
+		// 		if len(bets) == c.config.MaxBatch {
+		// 			SendBatch(c.conn, bets)
+		// 			RecvAnswer(c.conn)
+		// 			break batch 
+		// 		}
+		// 	}
 
 		// Checks if the context has been cancelled
 		select {
@@ -99,3 +119,4 @@ loop:
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
+
