@@ -69,6 +69,7 @@ loop:
 		err := c.createClientSocket()
 		if err != nil {
 			// If the connection fails, the client is closed and exit 1 is returned
+			c.conn.Close()
 			os.Exit(1)
 		}
 
