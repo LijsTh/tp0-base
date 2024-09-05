@@ -2,7 +2,6 @@ package common
 
 import (
 	"os"
-	"bufio"
 	"net"
 	"encoding/binary"
 
@@ -16,25 +15,19 @@ const ANSWER_SIZE = 1
 const SUCESS = 0
 const FAIL = 1
 
-func RecvAll(conn net.Conn, size int) []byte {
-	reader := bufio.NewReader(conn)
-	msg := make([]byte, size)
-	read := int(0)
-	for read < size {
-		n, err := reader.Read(msg)
-		if err != nil || n == 0 {
-			log.Criticalf(
-				"action: recv_all | result: fail | total read: %v | error: %v",
-				read,
-				err,
-			)
-			os.Exit(1)
-		}
-		read += n
-	} 
-	
-	return msg
 
+func RecvAll(conn net.Conn, size int) ([]byte, error) {
+    buf := make([]byte, size)
+    total := 0
+
+    for total < size {
+        n, err := conn.Read(buf[total:])
+        if err != nil || n == 0 {
+            return nil, err
+        }
+        total += n
+    }
+    return buf, nil
 }
 
 func send_all(conn net.Conn, message []byte) error{
@@ -94,11 +87,12 @@ func SendBet(conn net.Conn, bet *Bet) error {
 	if err != nil {return err} else {return nil}
 }
 
-func RecvAnswer(conn net.Conn) {
-	answer := RecvAll(conn, ANSWER_SIZE)
+func RecvAnswer(conn net.Conn) error {
+	answer, err := RecvAll(conn, ANSWER_SIZE)
 	if answer[0] != SUCESS {
 		log.Error("action: receive_message | result: fail")
 	} else {
 		log.Info("action: receive_message | result: success") 
 	}
+	return err
 }
