@@ -58,7 +58,7 @@ func (c *Client) createClientSocket() error {
 }
 
 func (c *Client) initialize_reader() (*BetReader) {
-	file := "/data/agency-" + c.config.ID + ".csv"
+	file := FILEPATH + c.config.ID + ".csv"
 	reader, err := NewBetReader(file, c.config.MaxBatch, c.config.ID)
 	if err != nil {
 		log.Criticalf("action: file_open | result: fail | error: %v", err)
