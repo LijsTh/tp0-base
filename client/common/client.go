@@ -21,6 +21,8 @@ type ClientConfig struct {
 	MaxBatch      int
 }
 
+const FILEPATH = "/data/agency-"
+
 // Client Entity that encapsulates how
 type Client struct {
 	config ClientConfig
@@ -54,7 +56,7 @@ func (c *Client) createClientSocket() error {
 }
 
 func (c *Client) initialize_reader() (*BetReader) {
-	file := "/data/agency-" + c.config.ID + ".csv"
+	file := FILEPATH + c.config.ID + ".csv"
 	reader, err := NewBetReader(file, c.config.MaxBatch, c.config.ID)
 	if err != nil {
 		log.Criticalf("action: file_open | result: fail | error: %v", err)
@@ -76,6 +78,7 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 		if err != nil {
 			// If the connection fails, the client is closed and exit 1 is returned
 			c.conn.Close()
+			reader.file.Close()
 			os.Exit(1)
 		}
 
