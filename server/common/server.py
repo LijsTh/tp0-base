@@ -20,8 +20,8 @@ class Server:
         Dummy Server loop
 
         Server that accept a new connections and establishes a
-        communication with a client. After client with communucation
-        finishes, servers starts to accept new connections again
+        communication with a client. The server will launch a new
+        process to handle the client connection. 
         """
 
         signal.signal(signal.SIGTERM, self.__shutdown)
@@ -84,12 +84,15 @@ def handle_client(client, file_lock,  barrier):
         bets = recv_batch(client)
         if len(bets) == 0:
             agency = recv_agency(client)
+            last_one = barrier.n_waiting == MAX_AGENCIES - 1
             barrier.wait()
 
             # Sincronized so can read the file
             bets = list(load_bets())
 
             winners = [int(bet.document) for bet in bets if has_won(bet) and bet.agency == agency]
+            if last_one:
+                logging.info(f"action: sorteo | result: success")
             send_results(client, winners)
                 
         else :

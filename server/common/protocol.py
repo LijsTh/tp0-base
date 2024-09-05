@@ -79,7 +79,10 @@ def send_all(skt: socket.socket, data: bytes) -> None:
         sent = skt.send(data)
         data = data[sent:]
 
-
+"""
+Reads the first byte from the socket to determine the size of the batch
+Then proceeds to reach each bet in the batch
+"""
 def recv_batch(skt: socket.socket) -> list[Bet]:
     data = recv_all(skt, BATCH_SIZE)
     size = int.from_bytes(data, byteorder='big')
@@ -101,12 +104,16 @@ def send_answer(skt: socket.socket, answer: int) -> None:
     send_all(skt, data)
 
 
-
+"""
+Sends the winners to the client with the following format:
+    - 1 byte for the number of winners
+    - 4 bytes for each winner
+"""
 def send_results(client: socket.socket , winners: list[int] ) -> None:
     __send_results(client, winners)
     recv_finish(client)
 
-    
+ 
 def __send_results(client: socket.socket, winners: list[int]) -> None:
     data = len(winners).to_bytes(WINNERS_N_SIZE, byteorder='big')
     for winner in winners:
