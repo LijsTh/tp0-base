@@ -89,6 +89,9 @@ class Server:
 
     
     def __shutdown(self, signum, frame):
+        """
+        Shutdown the server gracefully
+        """
         if self.client:
             self.client.close()
             self.client = None

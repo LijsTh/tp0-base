@@ -71,6 +71,7 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, channe
 			os.Exit(1)
 		}
 
+		// wait for signal for current iteration
 		go wait_for_signal(ctx, &c.conn, channel, &stopped)
 
 		// Sends a message to the server and waits for a response
@@ -101,44 +102,5 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, channe
 			channel <- true
 		}
 	}
-
-
-	// 	// Create the connection the server in every loop iteration. Send an
-	// 	err := c.createClientSocket()
-	// 	if err != nil {
-	// 		log.Errorf("action: create_client_socket | result: fail | client_id: %v | error: %v",)
-	// 		c.conn.Close()
-	// 		// If the connection fails, the client is closed and exit 1 is returned
-	// 		os.Exit(1)
-	// 	}
-
-	// 	go wait_for_signal(ctx, &c.conn, channel, stopped)
-
-	// 	// Sends a message to the server and waits for a response
-	// 	_, err1 := fmt.Fprintf(
-	// 		c.conn,
-	// 		"[CLIENT %v] Message N°%v\n",
-	// 		c.config.ID,
-	// 		msgID,
-	// 	)
-
-	// 	msg, err2 := bufio.NewReader(c.conn).ReadString('\n')
-
-	// 	if err1 != nil || err2 != nil {
-	// 		log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-	// 			c.config.ID,
-	// 			err,
-	// 		)
-	// 		return 
-	// 	} else {
-	// 		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-	// 			c.config.ID,
-	// 			msg,
-	// 		)
-	// 	}
-	// 	c.conn.Close()
-	// 	time.Sleep(c.config.LoopPeriod)
-	// 	channel <- true
-	// }
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
