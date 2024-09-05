@@ -1,8 +1,9 @@
 import socket
 import logging
 import signal
-from common.utils import Bet, store_bets, load_bets, has_won
-from common.protocol import  recv_batch, send_error, send_sucess, empty_socket , recv_agency, send_results 
+import multiprocessing
+from common.utils import store_bets, load_bets, has_won
+from common.protocol import  recv_batch, send_error, send_sucess,recv_agency, send_results 
 
 MAX_AGENCIES = 5
 class Server:
@@ -11,9 +12,8 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
-        self.client = None
-        self.finished_clients = {} 
         self.running = True 
+        self.pool = multiprocessing.Pool(MAX_AGENCIES)
 
     def run(self):
         """
@@ -28,62 +28,31 @@ class Server:
         signal.signal(signal.SIGINT, self.__shutdown)
 
 
-        # TODO: Modify this program to handle signal to graceful shutdown
-        # the server
-        while self.running:
-            try: 
-                if len(self.finished_clients) == MAX_AGENCIES:
-                    bets = load_bets()
-                    winners = [(bet.agency,int(bet.document)) for bet in bets if has_won(bet)] 
-                    send_results(self.finished_clients, winners)
+        manager = multiprocessing.Manager()
+        file_lock = manager.Lock()
+        barrier = manager.Barrier(MAX_AGENCIES)
+
+        with manager : 
+            while self.running:
+                try: 
+
+                    client_sock = self.__accept_new_connection()
+                    if client_sock:
+                        self.pool.apply_async(handle_client, (client_sock, file_lock, barrier))
+
+
+                except OSError as e:
+                    if self.running:
+                        logging.error(f"action: accept_connections | result: fail | error: {e}")
                     break
 
-
-                client_sock = self.__accept_new_connection()
-                if client_sock:
-                    self.client = client_sock
-                    self.__handle_client_connection()
-            except OSError as e:
-                if self.running:
-                    logging.error(f"action: accept_connections | result: fail | error: {e}")
-                break
+        # wait for all the handlers to finish
+        self.pool.close()
+        self.pool.join()
 
         logging.info("action: server_shutdown | result: success")
 
 
-        
-    
-
-    def __handle_client_connection(self):
-        """
-        Read message from a specific client socket and closes the socket
-
-        If a problem arises in the communication with the client, the
-        client socket will also be closed
-        """
-        try:
-            bets = recv_batch(self.client)
-            if len(bets) == 0:
-                agency = recv_agency(self.client)
-                self.finished_clients[agency] = self.client
-                self.client = None
-                return
-            else :
-                store_bets(bets)
-                logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(bets)}")
-                send_sucess(self.client)
-        except OSError as e:  # Connection closed
-            if self.running:
-                logging.info("action: client_shutdown | result: success")
-        except any as e :
-                logging.info(f"apuesta_recibida | result: fail | cantidad: {len(bets)}| error: {e}")
-                empty_socket(self.client) # Flushes the current batch
-                send_error(self.client) 
-                
-        finally:
-            if self.client:
-                self.client.close()
-            self.client = None
 
     def __accept_new_connection(self):
         """
@@ -105,15 +74,40 @@ class Server:
 
     
     def __shutdown(self, signum, frame):
-        if self.client:
-            self.client.shutdown(socket.SHUT_RDWR)
-            self.client.close()
-            self.client = None
-        for _, client in self.finished_clients.items():
-            client.shutdown(socket.SHUT_RDWR)
-            client.close()
         self.running = False
         self._server_socket.shutdown(socket.SHUT_RDWR)
         self._server_socket.close()
+
        
+
+def handle_client(client, file_lock,  barrier):
+    try:
+        bets = recv_batch(client)
+        if len(bets) == 0:
+            agency = recv_agency(client)
+            barrier.wait()
+
+            # Sincronized so can read the file
+            bets = list(load_bets())
+
+            winners = [int(bet.document) for bet in bets if has_won(bet) and bet.agency == agency]
+            send_results(client, winners)
+                
+        else :
+            with file_lock:
+                store_bets(bets)
+            logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(bets)}")
+            send_sucess(client)
+
+    except OSError as e:  # Connection closed
+        client = None
+        return
+
+    except Exception as e :
+            logging.info(f"apuesta_recibida | result: fail | error: {e}")
+            send_error(client) 
+
+    finally: 
+        if client:
+            client.close()
 

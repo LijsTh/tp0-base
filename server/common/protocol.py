@@ -101,24 +101,13 @@ def send_answer(skt: socket.socket, answer: int) -> None:
     send_all(skt, data)
 
 
-def empty_socket(skt: socket.socket) -> None:
-    while True:
-        try:
-            skt.recv(1)
-        except:
-            ## Socket is empty
-            break
 
-
-def send_results(clients: dict[int, socket.socket], winners: list[int] ) -> None:
-    for agency , client in clients.items():
-        winner_for_agency = [winner[1] for winner in winners if winner[0] == agency ]
-        __send_results(client, winner_for_agency)
-        recv_finish(client)
+def send_results(client: socket.socket , winners: list[int] ) -> None:
+    __send_results(client, winners)
+    recv_finish(client)
 
     
 def __send_results(client: socket.socket, winners: list[int]) -> None:
-    # hago un arreglo de bytes con los ganadores inlcuyendo el tamaño
     data = len(winners).to_bytes(WINNERS_N_SIZE, byteorder='big')
     for winner in winners:
         data += winner.to_bytes(DOCUMENT_SIZE, byteorder='big')
