@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 from common.utils import Bet, store_bets
-from common.protocol import recv_bet, send_all, send_answer, SUCESS
+from common.protocol import recv_bet, send_all, send_answer, SUCESS, ERROR_GENERIC
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -61,7 +61,9 @@ class Server:
             if self.running:
                 logging.error(f"action: receive_message | result: fail | error: {e}")
             else:
-                logging.info("action: client_shutdown | result: success") 
+                logging.info("action: client_shutdown | result: success")
+        except Exception: 
+            send_answer(self.client, ERROR_GENERIC)
         finally:
             if self.client:
                 self.client.close()
