@@ -124,7 +124,7 @@ func main() {
 	// Create a new client and start the client loop
 	client := common.NewClient(clientConfig)
 	wg.Add(1)
-	go client.StartClientLoop(ctx, &wg)
+	go client.StartClientLoop(ctx, &wg, make(chan bool))
 
 	// Wait for the client loop to finish
 	wg.Wait()

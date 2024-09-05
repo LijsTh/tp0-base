@@ -116,18 +116,11 @@ func SendBatch(conn net.Conn, bets []*Bet) error {
 	if err != nil {return err} else {return nil}
 }
 
-func RecvAnswer(conn net.Conn) error{
+func RecvAnswer(conn net.Conn) (int,error) {
 	answer, err := RecvAll(conn, ANSWER_SIZE)
-	if answer[0] != SUCESS {
-		log.Criticalf(
-			"action: send_batch | result: fail | error: server returned an error",
-		)
-	} else {
-		log.Infof(
-			"action: send_batch | result: success",
-		)
-	}
-	return err
+	if err != nil {return -1, err}
+	answer_v := int(answer[0])			
+	return answer_v, nil 
 }
 
 func RecvResults(conn net.Conn) ([]uint32, error) {
