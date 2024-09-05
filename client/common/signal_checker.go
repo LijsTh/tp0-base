@@ -6,6 +6,9 @@ import (
 )
 
 
+// Wait for a signal to stop the client
+// If the signal is received, close the connection and set the stopped flag to true
+// If the connection finished before the signal received by the channel, return
 func wait_for_signal(ctx context.Context, connection *net.Conn, finished_iter chan bool, stopped *bool) {
 	select {
 		case <-ctx.Done():

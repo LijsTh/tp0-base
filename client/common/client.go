@@ -55,6 +55,7 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+// Open the file and create the reader while handling errors
 func (c *Client) initialize_reader() (*BetReader) {
 	file := FILEPATH + c.config.ID + ".csv"
 	reader, err := NewBetReader(file, c.config.MaxBatch, c.config.ID)
@@ -82,6 +83,7 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 			os.Exit(1)
 		}
 
+		// Wait for a signal to stop the client
 		go wait_for_signal(ctx, &c.conn, finished_iter, &stopped)
 
 		bets, err := reader.ReadBets()
@@ -114,6 +116,7 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 
 		c.conn.Close()
 		time.Sleep(c.config.LoopPeriod)
+		// Stop the go routine for the next connection
 		if !stopped {finished_iter <- true}
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)

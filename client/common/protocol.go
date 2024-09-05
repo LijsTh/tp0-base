@@ -11,11 +11,12 @@ const MAX_STR_SIZE = 255
 const DOCUMENT_SIZE = 4
 const NUMBER_SIZE = 2
 const ANSWER_SIZE = 1
+const BATCH_SIZE = 2
 const MAX_BATCH_BYTES = 8000 // 8KB
 
 const SUCESS = 0
 const FAIL = 1
-
+/// Read all the bytes from the connection to avoid partial reads
 func RecvAll(conn net.Conn, size int) ([]byte, error) {
     buf := make([]byte, size)
     total := 0
@@ -30,6 +31,7 @@ func RecvAll(conn net.Conn, size int) ([]byte, error) {
     return buf, nil
 }
 
+// Send all the bytes from the message to avoid partial writes
 func send_all(conn net.Conn, message []byte) error{
 	written := 0 
 	for written < len(message) {
@@ -45,7 +47,7 @@ func send_all(conn net.Conn, message []byte) error{
 	}
 	return nil
 }
-
+// Serialize a string with unknown size, the first byte is the size of the string
 func serializeUnknownString(message string, buf []byte) []byte{
 	if len(message) > MAX_STR_SIZE {
 		log.Criticalf( 
@@ -92,9 +94,12 @@ func encodeBet (bet *Bet) ([]byte, error) {
 
 	return msg, nil 
 }
-
+// Send a batch of bets to the server
+// The first two bytes are the number of bets
+// Then it sends the bets
 func SendBatch(conn net.Conn, bets []*Bet) error {
-	msg := make([]byte, 2) // 2 bytes
+	
+	msg := make([]byte, BATCH_SIZE) // 2 bytes
 	// sends the number of bets
 	binary.BigEndian.PutUint16(msg, uint16(len(bets)))
 	for _, bet := range bets {

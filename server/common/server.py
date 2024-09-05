@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 from common.utils import Bet, store_bets
-from common.protocol import send_all, recv_batch, send_error, send_sucess, empty_socket
+from common.protocol import send_all, recv_batch, send_error, send_sucess
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -47,7 +47,7 @@ class Server:
 
     def __handle_client_connection(self):
         """
-        Read message from a specific client socket and closes the socket
+        Read the batch of bets from the client and store them. Then it send the response to the client
 
         If a problem arises in the communication with the client, the
         client socket will also be closed
@@ -60,9 +60,8 @@ class Server:
         except OSError as e:  # Connection closed
             if self.running:
                 logging.info("action: client_shutdown | result: success")
-        except any as e :
-                logging.info(f"apuesta_recibida | result: fail | cantidad: {len(bets)}| error: {e}")
-                empty_socket(self.client) # Flushes the current batch
+        except Exception as e :
+                logging.info(f"apuesta_recibida | result: fail | error: {e}")
                 send_error(self.client) 
                 
         finally:

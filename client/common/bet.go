@@ -38,6 +38,8 @@ type BetReader struct {
 }
 
 func NewBetReader(csv_path string, batch_size int, agency string) (*BetReader, error) {
+	/// Crates a new BetReader
+	//  Opens the file ready to read
 	file, err := os.Open(csv_path)
 	if err != nil {
 		return nil, err
@@ -55,6 +57,8 @@ func NewBetReader(csv_path string, batch_size int, agency string) (*BetReader, e
 
 
 func (br *BetReader) ReadBet() (*Bet, error) {
+	// Reads a bet from the csv file with the following format:
+	// firstName, lastName, document, birthDate, number
 	if br.finished {
 		return nil, nil
 	}
@@ -82,6 +86,7 @@ func (br *BetReader) Finished() bool {
 }
 
 func (br *BetReader) ReadBets() ([]*Bet, error) {
+	// Reads a batch of bets from the csv file
 	var bets []*Bet
 	for i:= 0; i < br.batch_size; i++ {
 		bet, err := br.ReadBet()
