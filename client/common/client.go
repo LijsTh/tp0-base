@@ -14,7 +14,6 @@ import (
 
 var log = logging.MustGetLogger("log")
 const FILEPATH = "/data/agency-"
-// const FILEPATH = "../.data/agency-"
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
