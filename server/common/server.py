@@ -6,11 +6,13 @@ from common.utils import store_bets, load_bets, has_won
 from common.protocol import  recv_batch, send_error, send_sucess,recv_agency, send_results 
 
 MAX_AGENCIES = 5
+TIMEOUT = 10
 class Server:
     def __init__(self, port, listen_backlog):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
+        self._server_socket.settimeout(10)
         self._server_socket.listen(listen_backlog)
         self.running = True 
         self.pool = multiprocessing.Pool(MAX_AGENCIES)
@@ -40,7 +42,10 @@ class Server:
 
                     if client_sock:
                         self.pool.apply_async(handle_client, (client_sock, file_lock, barrier))
-
+                    
+                except socket.timeout:
+                    # The pool is done, we can shutdown
+                    break
                 except OSError as e:
                     if self.running:
                         logging.error(f"action: accept_connections | result: fail | error: {e}")
@@ -77,6 +82,7 @@ class Server:
         self.running = False
         self._server_socket.shutdown(socket.SHUT_RDWR)
         self._server_socket.close()
+        logging.info("action: socket_shutdown | result: success")
 
 
 def handle_client(client, file_lock,  barrier):
@@ -97,11 +103,14 @@ def handle_client(client, file_lock,  barrier):
                 
         else :
             with file_lock:
-                store_bets(bets)
+                    store_bets(bets)
             logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(bets)}")
             send_sucess(client)
 
     except OSError as e:  # Connection closed
+        return
+    
+    except EOFError as e:
         return
 
     except Exception as e :
