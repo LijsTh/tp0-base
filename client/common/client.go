@@ -96,7 +96,6 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, channe
 			)
 		}
 		c.conn.Close()
-		log.Info("Going to sleep")
 		time.Sleep(c.config.LoopPeriod)
 		if !stopped {
 			channel <- true
