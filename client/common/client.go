@@ -80,6 +80,7 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 		if err != nil {
 			// If the connection fails, the client is closed and exit 1 is returned
 			c.conn.Close()
+			reader.file.Close()
 			os.Exit(1)
 		}
 		
