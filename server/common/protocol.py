@@ -44,7 +44,9 @@ def recv_bet(skt: socket.socket) -> Bet:
 
     return Bet(agency, first_name, last_name, document, birthdate, number)
 
-
+"""
+reads a string from the socket with an unknown size, the size is read first
+"""
 def recv_str_uknown_size(skt: socket.socket) -> str:
     data = recv_all(skt, STR_SIZE)
     size = int.from_bytes(data, byteorder='big')

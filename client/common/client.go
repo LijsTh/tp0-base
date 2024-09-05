@@ -68,6 +68,7 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, channe
 			os.Exit(1)
 		}
 
+		// Wait for a signal to stop the client
 		go wait_for_signal(ctx, &c.conn, channel, &stopped)
 
 		// Uses env to create a new bet
@@ -99,6 +100,7 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, channe
 		c.conn.Close()
 		time.Sleep(c.config.LoopPeriod)
 		if !stopped {
+			// Makes the go routine stop waiting for signals 
 			channel <- true
 		}
 	}

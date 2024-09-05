@@ -17,6 +17,7 @@ const FAIL = 1
 
 
 func RecvAll(conn net.Conn, size int) ([]byte, error) {
+	/// Read all the bytes from the connection to avoid partial reads
     buf := make([]byte, size)
     total := 0
 
@@ -31,6 +32,7 @@ func RecvAll(conn net.Conn, size int) ([]byte, error) {
 }
 
 func send_all(conn net.Conn, message []byte) error{
+	/// Send all the bytes to the connection to avoid partial writes
 	written := 0 
 	for written < len(message) {
 		n, err := conn.Write(message)
@@ -47,6 +49,7 @@ func send_all(conn net.Conn, message []byte) error{
 }
 
 func serializeUnknownString(message string, buf []byte) []byte{
+	// Serialize a string with unknown size, the first byte is the size of the string
 	if len(message) > MAX_STR_SIZE {
 		log.Criticalf( 
 			"action: serialize_unknown_string | result: fail | error: string too long",
@@ -60,6 +63,7 @@ func serializeUnknownString(message string, buf []byte) []byte{
 
 
 func SendBet(conn net.Conn, bet *Bet) error {
+
 	// agency
 	msg := make([]byte, 0)
 	msg = append(msg, bet.agency)
