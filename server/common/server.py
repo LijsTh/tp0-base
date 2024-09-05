@@ -37,9 +37,9 @@ class Server:
                 try: 
 
                     client_sock = self.__accept_new_connection()
+
                     if client_sock:
                         self.pool.apply_async(handle_client, (client_sock, file_lock, barrier))
-
 
                 except OSError as e:
                     if self.running:
@@ -78,7 +78,6 @@ class Server:
         self._server_socket.shutdown(socket.SHUT_RDWR)
         self._server_socket.close()
 
-       
 
 def handle_client(client, file_lock,  barrier):
     try:
@@ -100,14 +99,11 @@ def handle_client(client, file_lock,  barrier):
             send_sucess(client)
 
     except OSError as e:  # Connection closed
-        client = None
         return
 
     except Exception as e :
             logging.info(f"apuesta_recibida | result: fail | error: {e}")
             send_error(client) 
 
-    finally: 
-        if client:
-            client.close()
-
+    finally:
+        client.close()
