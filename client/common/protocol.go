@@ -89,6 +89,7 @@ func SendBet(conn net.Conn, bet *Bet) error {
 
 func RecvAnswer(conn net.Conn) (int,error) {
 	answer, err := RecvAll(conn, ANSWER_SIZE)
+	if err != nil {return -1, err}
 	answer_v := int(answer[0])			
-	return answer_v, err
+	return answer_v, nil 
 }

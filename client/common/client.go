@@ -76,6 +76,7 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, channe
 		err = SendBet(c.conn, bet)	
 		if err != nil {
 			error_handler(err, "apuesta_enviada", &stopped)
+			c.conn.Close()
 			return
 		}
 
@@ -84,6 +85,7 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, channe
 		answer, err := RecvAnswer(c.conn)
 		if err != nil {
 			error_handler(err, "apuesta_enviada", &stopped)
+			c.conn.Close()
 			return
 		}
 
