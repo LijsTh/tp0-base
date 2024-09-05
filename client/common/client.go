@@ -53,18 +53,24 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (c *Client) initialize_reader() (*BetReader) {
 	file := "/data/agency-" + c.config.ID + ".csv"
 	reader, err := NewBetReader(file, c.config.MaxBatch, c.config.ID)
 	if err != nil {
 		log.Criticalf("action: file_open | result: fail | error: %v", err)
 		os.Exit(1)
 	}
+	return reader
+}
+
+// StartClientLoop Send messages to the client until some time threshold is met
+func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finished_iter chan bool) {
+	stopped := false
+	defer wg.Done()
+	reader := c.initialize_reader()
 	defer reader.file.Close()
-loop: 
-	for msgID := 1; !reader.finished; msgID++ {
+
+	for msgID := 1; !reader.finished && !stopped ; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
 		err := c.createClientSocket()
 		if err != nil {
@@ -73,9 +79,11 @@ loop:
 			os.Exit(1)
 		}
 
+		go wait_for_signal(ctx, &c.conn, finished_iter, &stopped)
+
 		bets, err := reader.ReadBets()
 		if err != nil {
-			log.Criticalf("action: read_bets | result: fail | error: %v", err)
+			error_handler(err, "read_bets", &stopped)
 			c.conn.Close()
 			return
 		}
@@ -83,28 +91,37 @@ loop:
 
 		err = SendBatch(c.conn, bets)
 		if err != nil {
-			log.Criticalf("action: send_batch | result: fail | error: %v", err)
+			error_handler(err, "send_batch", &stopped)
 			c.conn.Close()
 			return
 		}
 
-		err = RecvAnswer(c.conn)
+		answer, err := RecvAnswer(c.conn)
 		if err != nil {
-			log.Criticalf("action: recv_answer | result: fail | error: %v", err)
+			error_handler(err, "recv_answer", &stopped)
 			c.conn.Close()
 			return
 		}
 
-		// Checks if the context has been cancelled
-		select {
-		case <-ctx.Done():
-			log.Infof("action: SIGTERM Received | result: success | client_id: %v", c.config.ID)
-			break loop 
-		default:
-			c.conn.Close()
-			time.Sleep(c.config.LoopPeriod)
+		if answer == SUCESS {
+			log.Infof("action: enviar_apuesta | result: success | client_id: %v | cantidad: %v", c.config.ID, len(bets))
+		} else {
+			log.Infof("action: enviar_apuesta | result: fail | client_id: %v | cantidad: %v", c.config.ID, len(bets))
 		}
+
+		c.conn.Close()
+		time.Sleep(c.config.LoopPeriod)
+		if !stopped {finished_iter <- true}
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
+func error_handler(err error, message string, stopped *bool) {
+	if !(*stopped) {
+		log.Criticalf(
+			"action: %s | result: fail | error: %v",
+			message,
+			err,
+		)
+	}
+}
