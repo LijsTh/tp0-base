@@ -71,4 +71,4 @@ Luego cuando el handler detecta que le llego un cliente que termino de mandar (m
 
 Al llegar todos los procesos a la barrera se leen las apuestas hechas, y se realiza el sorteo en cada proceso. Al sincronizar los procesos mediante la barrera no hay RC al leer el archivo de las apuestas (debido a que nadie esta escribiendo en ese momento)
 
-Cabe aclarar que a diferencia del ejercicio 7, el servidor no termina por su cuenta sino que espera el SIGTERM/SIGINT para terminar y cerrar de manera limpia. 
+Luego el servidor espera 10 segundos en el loop de aceptar conexiones y al no recibir nunga durante el tiempo, ya que todas las conexiones terminaron sus tareas,  deja de aceptar conexiones y cierra. 
