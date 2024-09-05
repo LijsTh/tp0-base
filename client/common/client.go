@@ -1,9 +1,10 @@
 package common
 
 import (
-	"os"
 	"context"
 	"net"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 )
 
 var log = logging.MustGetLogger("log")
+const FILEPATH = "/data/agency-"
+// const FILEPATH = "../.data/agency-"
 
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
@@ -56,7 +59,8 @@ func (c *Client) createClientSocket() error {
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	file := "/data/agency-" + c.config.ID + ".csv"
+	file := FILEPATH + c.config.ID + ".csv"
+	// file := FILEPATH + "1" + ".csv"
 	reader, err := NewBetReader(file, c.config.MaxBatch, c.config.ID)
 	if err != nil {
 		log.Criticalf("action: file_open | result: fail | error: %v", err)
@@ -101,8 +105,39 @@ loop:
 			break loop 
 		default:
 			time.Sleep(c.config.LoopPeriod)
+			c.conn.Close()
 		}
 	}
+	err = c.awaitResults()
+	if err != nil {
+		log.Criticalf("action: consulta_ganadores | result: fail | error: %v", err)
+	}
+
+
+	c.conn.Close()
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
+func (c *Client) awaitResults() error {
+	err := c.createClientSocket()
+	if err != nil {
+		// If the connection fails, the client is closed and exit 1 is returned
+		os.Exit(1)
+	}
+	agency, _ := strconv.Atoi(c.config.ID)
+	err = sendEndMessage(c.conn, agency)	
+	if err != nil { return err}
+
+	log.Info("action: awaiting results")
+	// Wait for the server to send the results
+	results , err := RecvResults(c.conn)
+	if err != nil {
+		return err	
+	} else {
+		log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v", len(results))
+	}
+
+	err = sendFinish(c.conn)
+	if err != nil { return err}
+	return nil
+}

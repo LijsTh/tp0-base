@@ -15,6 +15,7 @@ type Bet struct {
 	number uint16
 }
 
+
 // NewBet Creates a new bet
 func NewBet(agency string, firstName string, lastName string, document uint32, birthDate string, number uint16) *Bet {
 	agency_n, _ := strconv.Atoi(agency)
