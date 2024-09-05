@@ -79,7 +79,10 @@ def send_all(skt: socket.socket, data: bytes) -> None:
         sent = skt.send(data)
         data = data[sent:]
 
-
+"""
+Reads the first byte from the socket to determine the size of the batch
+Then proceeds to reach each bet in the batch
+"""
 def recv_batch(skt: socket.socket) -> list[Bet]:
     data = recv_all(skt, BATCH_SIZE)
     size = int.from_bytes(data, byteorder='big')

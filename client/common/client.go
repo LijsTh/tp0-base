@@ -56,6 +56,7 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+// Open the file and create the reader while handling errors
 func (c *Client) initialize_reader() (*BetReader) {
 	file := FILEPATH + c.config.ID + ".csv"
 	reader, err := NewBetReader(file, c.config.MaxBatch, c.config.ID)
@@ -66,8 +67,8 @@ func (c *Client) initialize_reader() (*BetReader) {
 	return reader
 }
 
-
-// StartClientLoop Send messages to the client until some time threshold is met
+// StartClientLoop Send bets to the client until the reader is finished
+// Then waits for the results from the server 
 func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finished_iter chan bool) {
 	stopped := false
 	defer wg.Done()
@@ -83,9 +84,10 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 			os.Exit(1)
 		}
 		
+		// Wait for a signal to stop the client
 		go wait_for_signal(ctx, &c.conn, finished_iter, &stopped)
 
-
+		// Send the bets to server until the reader is finished
 		if !reader.finished {
 			err := c.handleSendBatch(reader, &stopped)
 			if err != nil {
@@ -114,6 +116,9 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
 
+// Send a message to the server to indicate that the client has finished
+// The message send a 0 representing 0 bets and the agency. 
+// Then waits for the server to send the results and sends a finish message
 func (c *Client) awaitResults(stopped *bool) error {
 	agency, _ := strconv.Atoi(c.config.ID)
 	err := sendEndMessage(c.conn, agency)	
@@ -134,7 +139,9 @@ func (c *Client) awaitResults(stopped *bool) error {
 	return nil
 }
 
-
+// Send a batch of bets to the server
+// First it read the bets from the file, then sends them to the server
+// After it waits for the server to send an answer for the batch
 func (c *Client) handleSendBatch(reader *BetReader, stopped *bool) error{
 	bets, err := reader.ReadBets()
 	if err != nil {

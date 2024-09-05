@@ -21,7 +21,7 @@ const FAIL = 1
 const END_BATCH = 0
 const FINISH = 3
 
-
+// Read all the bytes from the connection to avoid partial reads
 func RecvAll(conn net.Conn, size int) ([]byte, error) {
     buf := make([]byte, size)
     total := 0
@@ -36,6 +36,7 @@ func RecvAll(conn net.Conn, size int) ([]byte, error) {
     return buf, nil
 }
 
+// Read all the bytes from the connection to avoid partial reads
 func send_all(conn net.Conn, message []byte) error{
 	written := 0 
 	for written < len(message) {
@@ -52,6 +53,7 @@ func send_all(conn net.Conn, message []byte) error{
 	return nil
 }
 
+// Serialize a string with unknown size, the first byte is the size of the string
 func serializeUnknownString(message string, buf []byte) []byte{
 	if len(message) > MAX_STR_SIZE {
 		log.Criticalf( 
@@ -99,6 +101,10 @@ func encodeBet (bet *Bet) ([]byte, error) {
 	return msg, nil 
 }
 
+
+// Send a batch of bets to the server
+// The first two bytes are the number of bets
+// Then it sends the bets.
 func SendBatch(conn net.Conn, bets []*Bet) error {
 	msg := make([]byte, BATCH_SIZE) // 2 bytes
 	// sends the number of bets

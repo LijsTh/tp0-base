@@ -22,17 +22,19 @@ class Server:
         Server that accept a new connections and establishes a
         communication with a client. After client with communucation
         finishes, servers starts to accept new connections again
+
+        Server will stop accepting new connections when the finished
+        client count reaches MAX_AGENCIES and will send the results
+        to the agencies that have sent bets
         """
 
         signal.signal(signal.SIGTERM, self.__shutdown)
         signal.signal(signal.SIGINT, self.__shutdown)
 
-
-        # TODO: Modify this program to handle signal to graceful shutdown
-        # the server
         while self.running:
             try: 
                 if len(self.finished_clients) == MAX_AGENCIES:
+                    logging.info("action: sorteo | result: sucess")
                     bets = load_bets()
                     winners = [(bet.agency,int(bet.document)) for bet in bets if has_won(bet)] 
                     send_results(self.finished_clients, winners)
@@ -56,7 +58,7 @@ class Server:
 
     def __handle_client_connection(self):
         """
-        Read message from a specific client socket and closes the socket
+        Read the batch of bets from the client and store them. Then it send the response to the client. if it receives an empty batch, it will store the connection for later use
 
         If a problem arises in the communication with the client, the
         client socket will also be closed
@@ -84,6 +86,7 @@ class Server:
             if self.client:
                 self.client.close()
             self.client = None
+
 
     def __accept_new_connection(self):
         """
