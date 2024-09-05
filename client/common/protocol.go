@@ -87,12 +87,8 @@ func SendBet(conn net.Conn, bet *Bet) error {
 	if err != nil {return err} else {return nil}
 }
 
-func RecvAnswer(conn net.Conn) error {
+func RecvAnswer(conn net.Conn) (int,error) {
 	answer, err := RecvAll(conn, ANSWER_SIZE)
-	if answer[0] != SUCESS {
-		log.Error("action: receive_message | result: fail")
-	} else {
-		log.Info("action: receive_message | result: success") 
-	}
-	return err
+	answer_v := int(answer[0])			
+	return answer_v, err
 }

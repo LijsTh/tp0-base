@@ -53,12 +53,12 @@ func (c *Client) createClientSocket() error {
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup) {
+func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, channel chan bool) {
 	defer wg.Done()
+	stopped := false
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed\
-loop: 
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+	for msgID := 1; msgID <= c.config.LoopAmount && !stopped; msgID++ {
 
 		// Create the connection the server in every loop iteration. Send an
 		err := c.createClientSocket()
@@ -67,34 +67,49 @@ loop:
 			c.conn.Close()
 			os.Exit(1)
 		}
+
+		go wait_for_signal(ctx, &c.conn, channel, &stopped)
+
 		// Uses env to create a new bet
 		bet := NewBetFromEnv()
 
 		err = SendBet(c.conn, bet)	
 		if err != nil {
-			log.Criticalf(
-				"action: send_bet | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			c.conn.Close()
+			error_handler(err, "apuesta_enviada", &stopped)
 			return
 		}
-		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v", bet.document, bet.number)
+
 
 		// Receives the response from the server
-		RecvAnswer(c.conn)
-		c.conn.Close()
+		answer, err := RecvAnswer(c.conn)
+		if err != nil {
+			error_handler(err, "apuesta_enviada", &stopped)
+			return
+		}
 
-		// Checks if the context has been cancelled
-		select {
-		case <-ctx.Done():
-			log.Infof("action: SIGTERM Received | result: success | client_id: %v", c.config.ID)
-			break loop 
-		default:
-			c.conn.Close()
-			time.Sleep(c.config.LoopPeriod)
+		if answer == SUCESS {
+			log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v", bet.document, bet.number)		
+		} else {
+			log.Criticalf("action: apuesta_enviada | result: fail | dni: %v | numero: %v", bet.document, bet)
+		}
+
+		
+		c.conn.Close()
+		time.Sleep(c.config.LoopPeriod)
+		if !stopped {
+			channel <- true
 		}
 	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+}
+
+func error_handler(err error, message string, stopped *bool) {
+	if !(*stopped) {
+		log.Criticalf(
+			"action: %s | result: fail | error: %v",
+			message,
+			err,
+		)
+	}
+
 }
