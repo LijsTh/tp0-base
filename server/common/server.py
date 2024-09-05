@@ -36,7 +36,8 @@ class Server:
                     bets = load_bets()
                     winners = [(bet.agency,int(bet.document)) for bet in bets if has_won(bet)] 
                     send_results(self.finished_clients, winners)
-                    break
+                    self.__shutdown(None, None)
+                    continue
 
 
                 client_sock = self.__accept_new_connection()
@@ -47,7 +48,6 @@ class Server:
                 if self.running:
                     logging.error(f"action: accept_connections | result: fail | error: {e}")
                 break
-
         logging.info("action: server_shutdown | result: success")
 
 
