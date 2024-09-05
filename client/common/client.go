@@ -91,6 +91,7 @@ loop:
 			log.Infof("action: SIGTERM Received | result: success | client_id: %v", c.config.ID)
 			break loop 
 		default:
+			c.conn.Close()
 			time.Sleep(c.config.LoopPeriod)
 		}
 	}
