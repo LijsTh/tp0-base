@@ -1,9 +1,10 @@
 import socket
 import logging
 import signal
-from common.utils import Bet, store_bets
-from common.protocol import send_all, recv_batch, send_error, send_sucess, empty_socket
+from common.utils import Bet, store_bets, load_bets, has_won
+from common.protocol import  recv_batch, send_error, send_sucess, empty_socket , recv_agency, send_results 
 
+MAX_AGENCIES = 5
 class Server:
     def __init__(self, port, listen_backlog):
         # Initialize server socket
@@ -11,6 +12,7 @@ class Server:
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
         self.client = None
+        self.finished_clients = {} 
         self.running = True 
 
     def run(self):
@@ -30,6 +32,13 @@ class Server:
         # the server
         while self.running:
             try: 
+                if len(self.finished_clients) == MAX_AGENCIES:
+                    bets = load_bets()
+                    winners = [(bet.agency,int(bet.document)) for bet in bets if has_won(bet)] 
+                    send_results(self.finished_clients, winners)
+                    break
+
+
                 client_sock = self.__accept_new_connection()
                 if client_sock:
                     self.client = client_sock
@@ -54,9 +63,15 @@ class Server:
         """
         try:
             bets = recv_batch(self.client)
-            store_bets(bets)
-            logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(bets)}")
-            send_sucess(self.client)
+            if len(bets) == 0:
+                agency = recv_agency(self.client)
+                self.finished_clients[agency] = self.client
+                self.client = None
+                return
+            else :
+                store_bets(bets)
+                logging.info(f"action: apuesta_recibida | result: success | cantidad: {len(bets)}")
+                send_sucess(self.client)
         except OSError as e:  # Connection closed
             if self.running:
                 logging.info("action: client_shutdown | result: success")
@@ -69,7 +84,6 @@ class Server:
             if self.client:
                 self.client.close()
             self.client = None
-
 
     def __accept_new_connection(self):
         """
@@ -92,8 +106,12 @@ class Server:
     
     def __shutdown(self, signum, frame):
         if self.client:
+            self.client.shutdown(socket.SHUT_RDWR)
             self.client.close()
             self.client = None
+        for _, client in self.finished_clients.items():
+            client.shutdown(socket.SHUT_RDWR)
+            client.close()
         self.running = False
         self._server_socket.shutdown(socket.SHUT_RDWR)
         self._server_socket.close()

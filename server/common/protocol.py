@@ -10,10 +10,12 @@ NUMBER_SIZE = 2
 MAX_STR_SIZE = 255
 BATCH_SIZE = 2
 ANSWER_SIZE = 1
+WINNERS_N_SIZE = 1
 
 ## Server answers
 SUCESS = 0
 ERROR_GENERIC = 1
+FINISH = 3
 
 """
 Reads a bet from the socket and returns it.
@@ -81,7 +83,7 @@ def send_all(skt: socket.socket, data: bytes) -> None:
 def recv_batch(skt: socket.socket) -> list[Bet]:
     data = recv_all(skt, BATCH_SIZE)
     size = int.from_bytes(data, byteorder='big')
-    bets = []
+    bets = [] 
     for _ in range(size):
         bets.append(recv_bet(skt))
     return bets
@@ -106,3 +108,29 @@ def empty_socket(skt: socket.socket) -> None:
         except:
             ## Socket is empty
             break
+
+
+def send_results(clients: dict[int, socket.socket], winners: list[int] ) -> None:
+    for agency , client in clients.items():
+        winner_for_agency = [winner[1] for winner in winners if winner[0] == agency ]
+        __send_results(client, winner_for_agency)
+        recv_finish(client)
+
+    
+def __send_results(client: socket.socket, winners: list[int]) -> None:
+    # hago un arreglo de bytes con los ganadores inlcuyendo el tamaño
+    data = len(winners).to_bytes(WINNERS_N_SIZE, byteorder='big')
+    for winner in winners:
+        data += winner.to_bytes(DOCUMENT_SIZE, byteorder='big')
+    send_all(client, data)
+
+    
+def recv_finish(skt: socket.socket) -> None:
+    data = recv_all(skt, ANSWER_SIZE )
+    if data[0] != FINISH:
+        raise ValueError("Invalid end message")
+    
+
+def recv_agency(skt: socket.socket) -> int:
+    data = recv_all(skt, AGENCY_SIZE)
+    return int.from_bytes(data, byteorder='big')
