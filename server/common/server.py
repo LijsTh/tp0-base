@@ -109,9 +109,11 @@ class Server:
             self.client.shutdown(socket.SHUT_RDWR)
             self.client.close()
             self.client = None
+            logging.info(f"action: client_shutdown | result: success")
         for _, client in self.finished_clients.items():
             client.shutdown(socket.SHUT_RDWR)
             client.close()
+            logging.info(f"action: client_shutdown | result: success")
         self.running = False
         self._server_socket.shutdown(socket.SHUT_RDWR)
         self._server_socket.close()
