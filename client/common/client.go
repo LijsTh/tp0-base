@@ -115,7 +115,6 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 		}
 
 		c.conn.Close()
-		time.Sleep(c.config.LoopPeriod)
 		// Stop the go routine for the next connection
 		if !stopped {finished_iter <- true}
 	}
