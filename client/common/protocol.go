@@ -1,10 +1,9 @@
 package common
 
 import (
-	"os"
-	"net"
 	"encoding/binary"
-
+	"errors"
+	"net"
 )
 
 const MAX_STR_SIZE = 255
@@ -54,7 +53,7 @@ func serializeUnknownString(message string, buf []byte) []byte{
 		log.Criticalf( 
 			"action: serialize_unknown_string | result: fail | error: string too long",
 		)
-		os.Exit(1)
+		return nil
 	}
 	buf = append(buf, byte(len(message)))
 	buf = append(buf, []byte(message)...)
@@ -70,9 +69,11 @@ func SendBet(conn net.Conn, bet *Bet) error {
 
 	// firstName
 	msg = serializeUnknownString(bet.firstName, msg)
+	if msg == nil {return errors.New("error serializing first name")}
 
 	// lastName
 	msg = serializeUnknownString(bet.lastName, msg)
+	if msg == nil {return errors.New("error serializing last name")}
 
 	// document
 	docBytes := make([]byte, DOCUMENT_SIZE)
