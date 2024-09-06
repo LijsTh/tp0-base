@@ -106,7 +106,6 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 			break
 		}
 
-		time.Sleep(c.config.LoopPeriod)
 		c.conn.Close()
 		// signal handler to stop waiting
 		if (!stopped) {finished_iter <- true}
