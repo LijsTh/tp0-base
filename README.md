@@ -1,3 +1,52 @@
+# Ejecucción
+La ejeccución estandar se realizar con
+
+```
+make docker-compose-up
+```
+
+Luego para finalizar los containers se hace con el comando:
+```
+make docker-compose-down
+```
+
+## Ejercicio 1
+Se puede correr el script simplemente con 
+
+```sh
+./generar-compose.sh <archivo.yaml> <cantidad>
+```
+El archivo de python que utiliza el script se encuentra en /utils
+
+## Ejercicio 2
+Para la implementación de este ejercicio basta con correr el script del ejercicio uno (ya que tiene modificaciones para las binds) o con correr con make docker-compose-up ya que el archivo de `docker-compose-dev.yaml` también fue modificiado
+
+## Ejercicio 3
+Para las tests con `nc` se ejecutan de la siguiente manera:
+```sh
+./validar-echo-server.sh
+```
+
+## Ejercicio 4
+En este ejercicio no se modifica nada en cuanto a la ejeccuión, se pueden ver los efectos al enviar una señal al proceso por ejemplo. 
+
+## Ejercicio 5
+Para correr este ejercicio se modificó el archivo de docker-compose para tener ya cargada una bet en diferentes $ENVS. basta con ejecutarlo normalmente (make docker-compose-up)
+
+## Ejercicio 6
+En este ejercicio es donde empiezan a haber mas variables. 
+
+### batch max amount
+Para cambiar el tamaño del tamaño maximo de batch por paquete se encuentra como constante: `MAX_BATCH_SIZE` en el archivo `client/common/protocol.go`. El tamaño de cada batch se modifica en el archivo de config del cliente.
+
+### agencias y data
+Es necesario descomprimir el dataset dentro de `.data` .  Si se quier cambiar el directorio se debe cambiar la consante `FILEPATH`  en el archivo `client/common/client.go`. Por deafult el `FILEPATH` se encuentra en /data/ debido al mount del container. 
+
+## Ejercicio 7
+El ejercicio 7 tiene los mismos requerimientos que el ejercicio 6 sumado que esta definido la cantidad de agencias como constante en `server/common/server.py`
+
+## Ejercicio 8
+Misma ejecucción que ejercicio 7.
 # Resolución parte 2
 
 ## Ejercicio 5
