@@ -105,20 +105,42 @@ func encodeBet (bet *Bet) ([]byte, error) {
 // The first two bytes are the number of bets
 // Then it sends the bets.
 func SendBatch(conn net.Conn, bets []*Bet) error {
-	msg := make([]byte, BATCH_SIZE) // 2 bytes
-	// sends the number of bets
-	binary.BigEndian.PutUint16(msg, uint16(len(bets)))
+	var batches [][]byte
+	var currentBatch []byte
+
+	// Add total number of bets at the beginning of the first batch
+	currentBatch = make([]byte, BATCH_SIZE) // Initialize with 2 bytes
+	binary.BigEndian.PutUint16(currentBatch, uint16(len(bets)))
+
 	for _, bet := range bets {
-		if len(msg) > MAX_BATCH_BYTES {
-			log.Critical("action: send_batch | result: fail | error: batch too big")
-			os.Exit(1)
-		}
 		betMsg, err := encodeBet(bet)
-		if err != nil {return err}
-		msg = append(msg, betMsg...)
+		if err != nil {
+			return err
+		}
+
+		// If adding betMsg exceeds the max batch size, flush the current batch
+		if len(currentBatch)+len(betMsg) > MAX_BATCH_BYTES {
+			batches = append(batches, currentBatch) // Save current batch
+			currentBatch = make([]byte, 0)          // Start a new empty batch (no bet count in subsequent batches)
+		}
+
+		// Append the bet message to the current batch
+		currentBatch = append(currentBatch, betMsg...)
 	}
-	err := send_all(conn, msg)
-	if err != nil {return err} else {return nil}
+
+	// Add the last batch if there's any remaining data
+	if len(currentBatch) > 0 {
+		batches = append(batches, currentBatch)
+	}
+
+	// Send all batches
+	for _, batch := range batches {
+		if err := send_all(conn, batch); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func RecvAnswer(conn net.Conn) (int,error){
