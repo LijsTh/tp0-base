@@ -78,7 +78,6 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 		// Create the connection the server in every loop iteration. Send an
 		err := c.createClientSocket()
 		if err != nil {
-			// If the connection fails, the client is closed and exit 1 is returned
 			log.Infof("action: server_connect | result: fail | client_id: %v", c.config.ID)
 			return
 		}
