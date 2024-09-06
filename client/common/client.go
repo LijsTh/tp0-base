@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 	"net"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -62,7 +61,7 @@ func (c *Client) initialize_reader() (*BetReader) {
 	reader, err := NewBetReader(file, c.config.MaxBatch, c.config.ID)
 	if err != nil {
 		log.Criticalf("action: file_open | result: fail | error: %v", err)
-		os.Exit(1)
+		return nil
 	}
 	return reader
 }
@@ -73,15 +72,15 @@ func (c *Client) StartClientLoop(ctx context.Context, wg *sync.WaitGroup, finish
 	stopped := false
 	defer wg.Done()
 	reader := c.initialize_reader()
+	if reader == nil {return}
 	defer reader.file.Close()
 	for msgID := 1; !stopped; msgID++ {
 		// Create the connection the server in every loop iteration. Send an
 		err := c.createClientSocket()
 		if err != nil {
 			// If the connection fails, the client is closed and exit 1 is returned
-			c.conn.Close()
-			reader.file.Close()
-			os.Exit(1)
+			log.Infof("action: server_connect | result: fail | client_id: %v", c.config.ID)
+			return
 		}
 		
 		// Wait for a signal to stop the client
